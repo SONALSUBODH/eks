@@ -52,3 +52,34 @@ data "aws_subnets" "default" {
      value = [data.aws_vpc.default.id]
     }
 }
+
+resource "aws_eks_cluster" "demo" {
+  name     = "${var.env}-cluster"
+  role_arn = aws_iam_role.eks_cluster.arn
+
+  vpc_config {
+    subnet_ids = [
+      data.aws_subnets.default.ids
+    ]
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.cluster_EKSPolicy]
+}
+resource "aws_eks_node_group" "Node_grp" {
+  cluster_name    = aws_eks_cluster.demo.name
+  node_group_name = "${var.env}-Node_grp"
+  node_role_arn   = aws_iam_role.eks_node_role.arn
+  subnet_ids      = data.aws_subnets.default.ids
+
+  scaling_config {
+    desired_size = var.desired_size
+    max_size     = var.max_size
+    min_size     = var.min_size
+  }
+depends_on = [
+    aws_iam_role_policy_attachment.example-AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.example-AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.example-AmazonEC2ContainerRegistryReadOnly,
+  ]
+}
+
