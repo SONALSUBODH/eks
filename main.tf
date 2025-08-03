@@ -16,7 +16,7 @@ resource "aws_iam_role" "eks_cluster_role" {
     ]
   })
 }
-resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
+resource "aws_iam_role_policy_attachment" "cluster_EKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster_role.name
 }
@@ -49,14 +49,14 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEC2ContainerRegistryRea
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = aws_iam_role.eks_node_role.name
 }
-}
+
 data "aws_vpc" "default" {
   default = true
 }
 data "aws_subnets" "default" {
      filter {
-     name = "vpc-id"
-     value = [data.aws_vpc.default.id]
+       name   = "vpc-id"
+       values = [data.aws_vpc.default.id]
     }
 }
 
@@ -65,12 +65,13 @@ resource "aws_eks_cluster" "demo" {
   role_arn = aws_iam_role.eks_cluster_role.arn
 
   vpc_config {
-    subnet_ids = [
-      data.aws_subnets.default.ids
-    ]
+    subnet_ids = data.aws_subnets.default.ids
+    
   }
 
-  depends_on = [aws_iam_role_policy_attachment.cluster_EKSClusterPolicy]
+  depends_on = [
+    aws_iam_role_policy_attachment.cluster_EKSClusterPolicy
+    ]
 }
 resource "aws_eks_node_group" "Node_grp" {
   cluster_name    = aws_eks_cluster.demo.name
@@ -82,12 +83,11 @@ resource "aws_eks_node_group" "Node_grp" {
     desired_size = var.desired_size
     max_size     = var.max_size
     min_size     = var.min_size
-  }
-   instance_type = var.instance.types
+}
+  instance_types= ["t3.medium"]
 depends_on = [
     aws_iam_role_policy_attachment.example-AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.example-AmazonEKS_CNI_Policy,
     aws_iam_role_policy_attachment.example-AmazonEC2ContainerRegistryReadOnly,
   ]
 }
-
